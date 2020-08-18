@@ -1,3 +1,3 @@
 # Cache-Go
 
-This rep implements Cache with LRU, MFU, FIFO functionalities in Go.
+This repo implements Cache with LRU, MFU, FIFO functionalities in Go.
