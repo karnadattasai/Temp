@@ -22,8 +22,12 @@ func NewLRUCache() Cache {
 
 // NewLFUCache return new Cache with LFU as replacement policy
 // func NewLFUCache() Cache {
+
 // }
 
-// // NewFIFOCache return new Cache with FIFO as replacement policy
-// func NewFIFOCache() Cache {
-// }
+// NewFIFOCache return new Cache with FIFO as replacement policy
+func NewFIFOCache() Cache {
+	c := cacheFIFO{}
+	c.keyNodePointerMap = make(map[int]*list.Node)
+	return &c
+}
