@@ -8,7 +8,7 @@ import (
 
 func main() {
 	var c cache.Cache
-	c = cache.NewLRUCache()
+	c = cache.NewLFUCache()
 	fmt.Println(c.Read(1))
 	c.Write(7, 7)
 	c.Display()
