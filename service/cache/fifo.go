@@ -18,16 +18,15 @@ func (c *cacheFIFO) Read(key int) int {
 }
 
 func (c *cacheFIFO) Write(key int, value int) {
+	// if given key is already presesnt update the value
 	if node, ok := c.keyNodePointerMap[key]; ok {
 		node.P.Value = value
 	}
+	// if key not present, first check if the length of list is less than capacity of cache else remove the First entered node
 	if c.cacheList.Len() >= capacity {
 		delete(c.keyNodePointerMap, c.cacheList.Front().P.Key)
 		c.cacheList.Remove(c.cacheList.Front())
 	}
+	// Add the node to list and insert the key in the map
 	c.keyNodePointerMap[key] = c.cacheList.Push(list.Pair{Key: key, Value: value})
-}
-
-func (c *cacheFIFO) Display() {
-	c.cacheList.Display()
 }
