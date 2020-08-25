@@ -2,19 +2,21 @@ package cache
 
 import (
 	"container/heap"
-	"fmt"
 	"time"
 )
 
+// data holds key, value and the timestamp when its referenced
 type data struct {
 	key       int
 	value     int
 	timestamp time.Time
 }
+
+// node data structure for priority queue
 type pqNode struct {
-	p     data
-	freq  int
-	index int
+	nodeData data
+	freq     int // frequency(no of times referenced) to maintain the priority
+	index    int // index in the Priority queue
 }
 
 type priorityQueue []*pqNode
@@ -26,9 +28,9 @@ func (pq priorityQueue) Less(i, j int) bool {
 	if pq[i].freq < pq[j].freq {
 		return true
 	}
+	// if both nodes have same priority/frequency select the least recently used
 	if pq[i].freq == pq[j].freq {
-		fmt.Printf("Hello there")
-		return pq[i].p.timestamp.Before(pq[j].p.timestamp)
+		return pq[i].nodeData.timestamp.Before(pq[j].nodeData.timestamp)
 	}
 	return false
 }
@@ -53,54 +55,42 @@ func (pq *priorityQueue) Pop() interface{} {
 	*pq = old[0 : n-1]
 	return item
 }
-func (pq *priorityQueue) update(item *pqNode, p data, freq int) {
-	p.timestamp = time.Now()
-	item.p = p
+func (pq *priorityQueue) update(item *pqNode, nodeData data, freq int) {
+	nodeData.timestamp = time.Now()
+	item.nodeData = nodeData
 	item.freq = freq
 	heap.Fix(pq, item.index)
 }
 
 // cacheLFU hold data structures that implements LFU
 type cacheLFU struct {
-	m  map[int]*pqNode
-	pq priorityQueue
+	keyNodePointerMap map[int]*pqNode
+	pq                priorityQueue
 }
 
 func (c *cacheLFU) Read(key int) int {
-	if node, ok := c.m[key]; ok {
-		c.pq.update(node, node.p, node.freq+1)
-		return node.p.value
+	// if key is present, read the value and update its frequency/priority
+	if node, ok := c.keyNodePointerMap[key]; ok {
+		c.pq.update(node, node.nodeData, node.freq+1)
+		return node.nodeData.value
 	}
 	return -1
 }
 
 func (c *cacheLFU) Write(key, value int) {
-	if node, ok := c.m[key]; ok {
-		node.p.value = value
-		c.pq.update(node, node.p, node.freq+1)
+	// if key is already present, update the value and also update the priority queue
+	if node, ok := c.keyNodePointerMap[key]; ok {
+		node.nodeData.value = value
+		c.pq.update(node, node.nodeData, node.freq+1)
 		return
 	}
+	// if key not present, first check if the length of list is less than capacity of cache else remove the LFU node
 	if len(c.pq) >= capacity {
 		node := heap.Pop(&c.pq).(*pqNode)
-		delete(c.m, node.p.key)
+		delete(c.keyNodePointerMap, node.nodeData.key)
 	}
+	// pushing the node on heap and inserting the key-Nodepointer in map
 	node := &pqNode{data{key, value, time.Now()}, 1, 0}
 	heap.Push(&c.pq, node)
-	c.m[key] = node
-}
-
-func (c *cacheLFU) Display() {
-	for i := 0; i < len(c.pq); i++ {
-		fmt.Printf("%d ", c.pq[i].p.key)
-	}
-	fmt.Printf("\n")
-	for i := 0; i < len(c.pq); i++ {
-		fmt.Printf("%d ", c.pq[i].freq)
-	}
-	fmt.Printf("\n")
-	for i := 0; i < len(c.pq); i++ {
-		fmt.Printf("%v ", c.pq[i].p.timestamp)
-	}
-	fmt.Printf("\n")
-	fmt.Printf("\n\n")
+	c.keyNodePointerMap[key] = node
 }
